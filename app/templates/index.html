@@ -1,128 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GenePredict</title>
-    <link rel="stylesheet" href="../static/css/styles.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  </head>
-  <body>
-    <div class="flex flex-col h-screen">
-      <header
-        class="bg-primary text-primary-foreground py-4 px-6 flex items-center justify-between"
-      >
-        <h1 class="text-2xl font-bold">GenePredict</h1>
-        <button class="btn-primary">Profile</button>
-      </header>
-      <main class="flex-1 bg-muted/40 p-8">
-        <div class="max-w-6xl mx-auto">
-          <div class="border rounded-lg shadow-sm overflow-hidden">
-            <div class="relative p-4">
-              <div class="flex justify-between items-center">
-                <h2 class="text-lg font-medium">
-                  Neurological Disease Risk Prediction
-                </h2>
-                <form
-                  id="upload-form"
-                  action="/upload"
-                  method="post"
-                  enctype="multipart/form-data"
-                >
-                  <input type="file" name="file" id="file" hidden />
-                  <label for="file" class="upload-btn cursor-pointer"
-                    >Upload CSV</label
-                  >
-                  <button type="submit" class="btn-primary ml-2">Submit</button>
-                </form>
-              </div>
-            </div>
-            <table class="bg-card text-primary-foreground w-full" id="result-table">
-              <thead>
-                <tr>
-                  <th>Disease</th>
-                  <th>Risk</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Alzheimer's</td>
-                  <td id="risk-percentage">-</td>
-                </tr>
-              </tbody>
-            </table>
-            <div class="info-box" id="info-box">
-              <h3>Analysis Summary</h3>
-              <p>
-                Your risk percentage is higher than the average population.
-                Consult with a specialist for more details.
-              </p>
-              <button class="btn-primary mt-2">Consult Specialist</button>
-            </div>
-          </div>
-          <!-- Chart Section -->
-          <div class="border rounded-lg shadow-sm overflow-hidden">
-            <div class="p-4">
-              <canvas id="riskComparisonChart"></canvas>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-    <script>
-      document.getElementById("upload-form").addEventListener("submit", function (e) {
-        e.preventDefault();
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HelixOracle</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>HelixOracle</h1>
+        <button id="profile-btn">Profile</button>
+    </header>
 
-        const formData = new FormData(this);
-        fetch("/upload", {
-          method: "POST",
-          body: formData,
-        })
-          .then(response => response.json())
-          .then(data => {
-            if (data.error) {
-              alert(data.error);
-              return;
-            }
-            
-            // Update risk percentage
-            document.getElementById("risk-percentage").textContent = data.risk;
-            
-            // Update chart
-            const ctx = document.getElementById("riskComparisonChart").getContext("2d");
-            const riskComparisonChart = new Chart(ctx, {
-              type: "bar",
-              data: {
-                labels: ["Normal Person", "You"],
-                datasets: [
-                  {
-                    label: "Alzheimer's Disease Risk",
-                    data: [data.chart_data.normal_risk, data.chart_data.your_risk],
-                    backgroundColor: [
-                      "rgba(75, 192, 192, 0.2)",
-                      "rgba(255, 99, 132, 0.2)",
-                    ],
-                    borderColor: ["rgba(75, 192, 192, 1)", "rgba(255, 99, 132, 1)"],
-                    borderWidth: 1,
-                  },
-                ],
-              },
-              options: {
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                  },
-                },
-                plugins: {
-                  legend: {
-                    display: false,
-                  },
-                },
-              },
+    <main>
+        <section class="upload-section">
+            <h2>Neurological Disease Risk Prediction</h2>
+            <form id="uploadForm" action="/predict" method="post" enctype="multipart/form-data">
+                <label for="file">Upload CSV File:</label>
+                <input type="file" id="file" name="dna_file" accept=".csv">
+                <button type="submit">Submit</button>
+            </form>
+        </section>
+
+        <section class="results-section">
+            <h2>Results</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Disease</th>
+                        <th>Risk</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Alzheimer's Disease</td>
+                        <td id="risk">N/A</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="analysis-summary">
+                <p>Risk Level: <span id="risk-level">Awaiting Upload</span></p>
+                <button id="consult-btn">Consult Specialist</button>
+            </div>
+
+            <div class="chart-container">
+                <h3>Risk Comparison</h3>
+                <canvas id="riskChart"></canvas>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function (e) {
+            e.preventDefault();  // Prevent default form submission
+
+            const formData = new FormData();
+            const fileInput = document.getElementById('file');
+            formData.append('dna_file', fileInput.files[0]);
+
+            fetch('/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    // Update the risk percentage in the table and analysis summary
+                    document.getElementById('risk').innerText = data.risk;
+                    document.getElementById('risk-level').innerText = data.risk;
+
+                    // Update the chart with the new risk data
+                    updateChart(data.risk);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
             });
-          })
-          .catch(error => console.error('Error:', error));
-      });
+        });
+
+        // Function to update the chart
+        function updateChart(userRisk) {
+            const ctx = document.getElementById('riskChart').getContext('2d');
+            const riskChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['User Risk', 'Average Population Risk'],
+                    datasets: [{
+                        label: 'Alzheimer\'s Risk (%)',
+                        data: [parseFloat(userRisk), 10],  // Example average population risk
+                        backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 99, 132, 0.2)'],
+                        borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
     </script>
-  </body>
+</body>
 </html>
